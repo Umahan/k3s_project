@@ -1,0 +1,47 @@
+namespace: monitoring
+
+# Настройки node-exporter
+nodeExporter:
+  name: node-exporter
+  image: prom/node-exporter:latest
+  imagePullPolicy: IfNotPresent
+  labels:
+    app: node-exporter
+    
+  # Настройки портов
+  ports:
+    containerPort: 9100
+    servicePort: 9100
+    # nodePort будет автоматически назначен, либо можно указать явно
+    # nodePort: 32137
+    
+  # Настройки service
+  service:
+    type: NodePort  # ClusterIP, NodePort, LoadBalancer
+    
+  # Настройки ресурсов
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"
+  
+  # Настройки томов
+  volumes:
+    proc:
+      enabled: true
+      path: /proc
+    sys:
+      enabled: true  
+      path: /sys
+    rootfs:
+      enabled: true
+      path: /
+  
+  # Аргументы командной строки
+  args:
+    - "--path.procfs=/host/proc"
+    - "--path.rootfs=/rootfs"
+    - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)"

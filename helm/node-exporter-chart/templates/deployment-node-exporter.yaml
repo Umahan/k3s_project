@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.nodeExporter.name }}
+  namespace: {{ default .Release.Namespace .Values.namespace | quote }}
+  labels:
+    {{- with .Values.nodeExporter.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- with .Values.nodeExporter.labels }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- with .Values.nodeExporter.labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.nodeExporter.hostNetwork }}
+      hostNetwork: {{ .Values.nodeExporter.hostNetwork }}
+      {{- end }}
+      {{- if .Values.nodeExporter.hostPID }}
+      hostPID: {{ .Values.nodeExporter.hostPID }}
+      {{- end }}
+      {{- if .Values.nodeExporter.hostIPC }}
+      hostIPC: {{ .Values.nodeExporter.hostIPC }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.nodeExporter.name }}
+          image: {{ .Values.nodeExporter.image }}
+          imagePullPolicy: {{ .Values.nodeExporter.imagePullPolicy }}
+          args:
+            {{- toYaml .Values.nodeExporter.args | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.nodeExporter.ports.containerPort }}
+          volumeMounts:
+            {{- if .Values.nodeExporter.volumes.proc.enabled }}
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            {{- end }}
+            {{- if .Values.nodeExporter.volumes.sys.enabled }}
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+            {{- end }}
+            {{- if .Values.nodeExporter.volumes.rootfs.enabled }}
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- with .Values.nodeExporter.resources }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.nodeExporter.volumes.proc.enabled }}
+        - name: proc
+          hostPath:
+            path: {{ .Values.nodeExporter.volumes.proc.path }}
+        {{- end }}
+        {{- if .Values.nodeExporter.volumes.sys.enabled }}
+        - name: sys
+          hostPath:
+            path: {{ .Values.nodeExporter.volumes.sys.path }}
+        {{- end }}
+        {{- if .Values.nodeExporter.volumes.rootfs.enabled }}
+        - name: rootfs
+          hostPath:
+            path: {{ .Values.nodeExporter.volumes.rootfs.path }}
+        {{- end }}
+
+
