@@ -1,3 +1,19 @@
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: prometheus-service
+#  namespace: monitoring
+#  labels:
+#    app: prometheus
+#spec:
+#  type: NodePort  # Или LoadBalancer для внешнего доступа
+#  ports:
+#  - port: 9090
+#    targetPort: 9090
+#    nodePort: 30090  # Опционально: фиксированный порт на узлах
+#  selector:
+#    app: prometheus
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -6,10 +22,10 @@ metadata:
   labels:
     app: prometheus
 spec:
-  type: NodePort  # Или LoadBalancer для внешнего доступа
-  ports:
-  - port: 9090
-    targetPort: 9090
-    nodePort: 30090  # Опционально: фиксированный порт на узлах
+  type: ClusterIP
   selector:
     app: prometheus
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
