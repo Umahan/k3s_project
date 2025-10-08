@@ -1,0 +1,11 @@
+groups:
+  - name: e2e.test.rules
+    rules:
+      - alert: E2ETestAlwaysFiring
+        expr: vector(1)
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "E2E test alert"
+          description: "This alert always fires (test). Remove after verifying pipeline."

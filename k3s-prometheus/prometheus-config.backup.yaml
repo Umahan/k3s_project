@@ -1,0 +1,91 @@
+apiVersion: v1
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    # где искать файлы правил (мы смонтируем prometheus-rules в /etc/prometheus/rules)
+    rule_files:
+      - 'rules/alerts.rules'
+
+    # куда отправлять алерты
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager-service.monitoring.svc:9093']
+
+    scrape_configs:
+      - job_name: 'node-exporter'
+        static_configs:
+          - targets: ['node-exporter-service:9100']
+            labels:
+              group: 'node-exporter'
+
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+            labels:
+              group: 'prometheus'
+
+      - job_name: 'minio-job'
+        metrics_path: /minio/v2/metrics/cluster
+        scheme: http
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['minio:9000']
+
+      - job_name: 'minio-job-bucket'
+        metrics_path: /minio/v2/metrics/bucket
+        scheme: http
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['minio:9000']
+
+      - job_name: 'postgres-exporter'
+        metrics_path: /metrics
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['192.168.0.177:9187']
+            labels:
+              group: 'databases'
+              environment: 'production'
+
+      - job_name: 'mongo_exporter'
+        metrics_path: /metrics
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['mongo-exporter-service:9216']
+            labels:
+              group: 'mongo'
+              environment: 'production'
+
+      - job_name: 'kubelet-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: false
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+            action: replace
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: kubernetes_node
+            action: replace
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"prometheus.yml":"global:\n  scrape_interval: 15s\n  evaluation_interval: 15s\n\n# где искать файлы правил (мы смонтируем prometheus-rules в /etc/prometheus/rules)\nrule_files:\n  - 'rules/alerts.rules'\n\n# куда отправлять алерты\nalerting:\n  alertmanagers:\n    - static_configs:\n        - targets: ['alertmanager-service.monitoring.svc:9093']\n\nscrape_configs:\n  - job_name: 'node-exporter'\n    static_configs:\n      - targets: ['node-exporter-service:9100']\n        labels:\n          group: 'node-exporter'\n\n  - job_name: 'prometheus'\n    static_configs:\n      - targets: ['localhost:9090']\n        labels:\n          group: 'prometheus'\n\n  - job_name: 'minio-job'\n    metrics_path: /minio/v2/metrics/cluster\n    scheme: http\n    scrape_interval: 30s\n    static_configs:\n      - targets: ['minio:9000']\n\n  - job_name: 'minio-job-bucket'\n    metrics_path: /minio/v2/metrics/bucket\n    scheme: http\n    scrape_interval: 30s\n    static_configs:\n      - targets: ['minio:9000']\n\n  - job_name: 'postgres-exporter'\n    metrics_path: /metrics\n    scrape_interval: 30s\n    static_configs:\n      - targets: ['192.168.0.177:9187']\n        labels:\n          group: 'databases'\n          environment: 'production'\n\n  - job_name: 'mongo_exporter'\n    metrics_path: /metrics\n    scrape_interval: 30s\n    static_configs:\n      - targets: ['mongo-exporter-service:9216']\n        labels:\n          group: 'mongo'\n          environment: 'production'\n\n  - job_name: 'kubelet-cadvisor'\n    scheme: https\n    tls_config:\n      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n      insecure_skip_verify: false\n    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token\n    kubernetes_sd_configs:\n      - role: node\n    relabel_configs:\n      - source_labels: [__meta_kubernetes_node_name]\n        regex: (.+)\n        target_label: __metrics_path__\n        replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor\n        action: replace\n      - target_label: __address__\n        replacement: kubernetes.default.svc:443\n      - source_labels: [__meta_kubernetes_node_name]\n        target_label: kubernetes_node\n        action: replace\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"prometheus-config","namespace":"monitoring"}}
+  creationTimestamp: "2025-10-04T15:12:58Z"
+  name: prometheus-config
+  namespace: monitoring
+  resourceVersion: "29854"
+  uid: 88f62db6-a659-4b04-9876-ea0a0c34e555

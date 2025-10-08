@@ -64,4 +64,7 @@ spec:
       - name: data-volume
         persistentVolumeClaim:
           claimName: prometheus-data
+      - name: rules
+        configMap:
+          name: prometheus-reles
       restartPolicy: Always  # Kubernetes эквивалент --restart unless-stopped
