@@ -22,17 +22,33 @@ spec:
           args:
             - --config.file=/etc/alertmanager/alertmanager.yml
             - --storage.path=/alertmanager
+            - --web.listen-address=:9093
           ports:
-            - containerPort: 9093
-              name: web
-            - containerPort: 9094
-              name: cluster
+            - name: web
+              containerPort: 9093
+            - name: cluster
+              containerPort: 9094
           volumeMounts:
             - name: config
               mountPath: /etc/alertmanager
               readOnly: true
             - name: data
               mountPath: /alertmanager
+            - name: webhook-secret
+              mountPath: /etc/alertmanager/secrets
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 10
+            periodSeconds: 10
       volumes:
         - name: config
           configMap:
@@ -40,6 +56,9 @@ spec:
             items:
               - key: alertmanager.yml
                 path: alertmanager.yml
+        - name: webhook-secret
+          secret:
+            secretName: alertmanager-webhook-token
         - name: data
           persistentVolumeClaim:
             claimName: alertmanager-data

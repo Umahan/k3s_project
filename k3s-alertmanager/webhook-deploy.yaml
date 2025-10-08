@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: team-webhook
+  namespace: monitoring
+  labels:
+    app: team-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: team-webhook
+  template:
+    metadata:
+      labels:
+        app: team-webhook
+    spec:
+      containers:
+        - name: webhook
+          # замените image на ваш собранный образ
+          image: localhost:5000/telegram-webhook:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-secret
+                  key: bot_token
+            - name: TELEGRAM_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-secret
+                  key: chat_id
+          volumeMounts:
+            - name: webhook-token
+              mountPath: /etc/webhook-secret
+              readOnly: true
+      volumes:
+        - name: webhook-token
+          secret:
+            secretName: alertmanager-webhook-token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: team-webhook
+  namespace: monitoring
+spec:
+  selector:
+    app: team-webhook
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

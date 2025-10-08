@@ -10,18 +10,16 @@ data:
 
     route:
       receiver: 'team-webhook'
-      group_by: ['alertname']
-      group_wait: 30s
+      group_by: ['alertname', 'instance']
+      group_wait: 10s
       group_interval: 5m
       repeat_interval: 1h
 
     receivers:
-    - name: 'team-webhook'
-      webhook_configs:
-        - url: 'http://example.org/webhook' # <<< замените на ваш webhook URL
-
-    # Пример Telegram (для справки — НЕ храните токен в ConfigMap в проде):
-    # - name: 'telegram'
-    #   telegram_configs:
-    #     - bot_token: '123456:ABC-DEF'   # замените
-    #       chat_id: -111111111111
+      - name: 'team-webhook'
+        webhook_configs:
+          - url: 'http://team-webhook.monitoring.svc.cluster.local:8080/alert'
+            http_config:
+              # путь внутри контейнера Alertmanager — соответствует монтированному secret
+              bearer_token_file: /etc/alertmanager/secrets/webhook_bearer
+            send_resolved: true
